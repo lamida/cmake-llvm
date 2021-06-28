@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 add_executable(main main.cpp)
 
 # Add LLVM
+# See https://llvm.org/docs/CMake.html#embedding-llvm-in-your-project:w
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
