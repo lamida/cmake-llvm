@@ -8,7 +8,7 @@ add_executable(main main.cpp)
 # Add LLVM
 # See https://llvm.org/docs/CMake.html#embedding-llvm-in-your-project:w
 # See https://stackoverflow.com/questions/57780600/how-is-cmake-finding-my-llvm-cmake-configuration on how cmake can find LLVM
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 13.0.0 REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
