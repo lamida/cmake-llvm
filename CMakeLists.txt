@@ -4,6 +4,8 @@ project(cmake_llvm)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(main main.cpp)
+add_executable(bb_walker bb_walker.cpp)
+add_executable(llvm_adt llvm_adt.cpp)
 
 # Add LLVM
 # See https://llvm.org/docs/CMake.html#embedding-llvm-in-your-project:w
@@ -21,6 +23,8 @@ llvm_map_components_to_libnames(llvm_libs support core irreader)
 
 # Link against LLVM libraries
 target_link_libraries(main ${llvm_libs})
+target_link_libraries(bb_walker ${llvm_libs})
+target_link_libraries(llvm_adt ${llvm_libs})
 
 # Google Test
 # Get Google Test
