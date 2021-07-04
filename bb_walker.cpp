@@ -5,6 +5,8 @@
 #include <llvm/IR/CFG.h>
 #include <llvm/ADT/BreadthFirstIterator.h>
 #include <llvm/ADT/DepthFirstIterator.h>
+#include <llvm/ADT/SCCIterator.h>
+#include <llvm/ADT/PostOrderIterator.h>
 #include <iostream>
 #include <vector>
 #include <array>
@@ -70,11 +72,11 @@ void handle(BasicBlock *basicBlock,
 
 void collectListOfActions(const std::unique_ptr<Module> &module) {
     // Put in vector for easy reference
-    std::vector<BasicBlock *> bbs;
+    std::vector<BasicBlock *> basicBlocks;
     for (auto &function : *module) {
         if (function.getName() == "main") {
             for (auto it : depth_first(&function.getEntryBlock())) {
-                bbs.push_back(it);
+                basicBlocks.push_back(it);
             }
         }
     }
@@ -84,16 +86,16 @@ void collectListOfActions(const std::unique_ptr<Module> &module) {
 
     // Tell whether BB is a checkpoint
     std::set<BasicBlock *> checkpoints;
-    for (auto i = 0; i < bbs.size(); i++) {
+    for (auto i = 0; i < basicBlocks.size(); i++) {
         if (cp[i]) {
-            checkpoints.insert(bbs[i]);
+            checkpoints.insert(basicBlocks[i]);
         }
     }
 
     std::array<BasicBlock *, 2> checkpointPair = {nullptr, nullptr};
     std::vector<BasicBlock *> LoA;
     MeasurementMap measurements;
-    for (auto bb : depth_first(bbs[0])) {
+    for (auto bb : depth_first(basicBlocks[0])) {
         handle(bb, measurements, checkpoints, LoA, checkpointPair);
     }
 
@@ -115,9 +117,58 @@ void collectListOfActions(const std::unique_ptr<Module> &module) {
     }
 }
 
+int getNumPredecassor(BasicBlock &BB) {
+    int num = 0;
+    for (auto it = pred_begin(&BB), e = pred_end(&BB); it != e; ++it) {
+        num++;
+    }
+    return num;
+}
+
+void iterator(const std::unique_ptr<Module> &module) {
+    std::vector<BasicBlock *> basicBlocks;
+    for (auto &function : *module) {
+        if (function.getName() == "main") {
+            for (auto it : depth_first(&function.getEntryBlock())) {
+                basicBlocks.push_back(it);
+            }
+        }
+    }
+
+    DenseMap<BasicBlock*, int> visited;
+    int all = 0;
+    for (auto it : depth_first(basicBlocks[0])) {
+        BasicBlock &b = *it;
+        visited[&b] += b.getTerminator()->getNumSuccessors();
+        if (getNumPredecassor(b) > 1) {
+            visited[&b] += getNumPredecassor(b);
+        }
+        all += visited[&b];
+    }
+    df_iterator_default_set<BasicBlock*> st;
+//    all = 2;
+    while (all != 0) {
+        BasicBlock *previous = nullptr;
+        for (auto it = df_ext_begin(basicBlocks[0], st), e = df_ext_end(basicBlocks[0], st); it != e; ++it) {
+            if (it->getTerminator()->getNumSuccessors() == 0) {
+                break;
+            }
+            if (previous != nullptr ) {
+                if (--visited[previous] != 0) {
+                    st.erase(previous);
+                }
+            }
+            all--;
+            outs() << "visiting: " << **it << "\n";
+            previous = *it;
+        }
+
+    }
+}
+
 int main() {
     LLVMContext ctx;
     SMDiagnostic Err;
-    auto module = parseIRFile("/home/lamida/github/lamida/hello-llvm/hello-dot/branches.ll", Err, ctx);
-    collectListOfActions(module);
+    auto module = parseIRFile("/home/lamida/github/lamida/hello-llvm/hello-dot/branches2.ll", Err, ctx);
+    iterator(module);
 }
